@@ -10,21 +10,24 @@ OptionParser.new do |opts|
 
   opts.banner = "Usage: resize.rb [options]"
 
-  opts.on("-g", "--geometry FILEPATH", "Use specificed geometry file") do |sf|
-    options.geometry = sf
-  end
-
   opts.on("-s", "--size DISKSIZE", "Specify disk size in sectors") do |size|
     options.size = size
+  end
+
+  opts.on("-d", "--device DEVICE", "Specify block device (ex. /dev/sda).  Implies using device size for --size, and overrides") do |device|
+    options.device = device
+    options.size = `cat /sys/block/#{device.gsub(/\/dev\//, "")}/size`
+  end
+
+  opts.on("-g", "--geometry FILEPATH", "Use specificed geometry file") do |sf|
+    options.geometry = sf
   end
 
   opts.on("-p", "--primary PARTNUM", "Specify primary partition by number") do |primary|
     options.primary = primary
   end
 
-  opts.on("-d", "--device DEVICE", "Specify block device (ex. /dev/sda)") do |device|
-    options.device = device
-  end
+
 end.parse!
 
 
@@ -39,7 +42,7 @@ until geometryFile[lineIndex].include? "#{options.device}#{options.primary}"
   geometryFile[lineIndex].gsub!(/start= *\d*/, "start= #{partStart}")
   lineIndex -= 1
   partEnd = partStart
-end
+end #End of generation for static partitions
 
 # generate primary partition specification and output full spec
 partStart = geometryFile[lineIndex].scan(/start= *\d*/)[0].split(" ")[1].to_i
